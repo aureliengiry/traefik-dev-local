@@ -1,0 +1,21 @@
+services:
+  traefik:
+    container_name: traefik-proxy
+    image: traefik:saintnectaire
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/tls.yml:/etc/traefik/tls.yml:ro
+      - ./certs:/etc/certs:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: "traefik-proxy-network"
+    driver: bridge
