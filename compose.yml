@@ -15,6 +15,19 @@ services:
     networks:
       proxy: ~
 
+  mailcatcher:
+    image: schickling/mailcatcher
+    container_name: traefik-mailcatcher
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mailcatcher.rule=Host(`mailcatcher.local`)"
+      - "traefik.http.routers.mailcatcher.tls=true"
+      - "traefik.http.routers.mailcatcher.entrypoints=websecure"
+      - "traefik.http.services.mailcatcher.loadbalancer.server.port=1080"
+    networks:
+      proxy: ~
+
 networks:
   proxy:
     name: "traefik-proxy-network"
