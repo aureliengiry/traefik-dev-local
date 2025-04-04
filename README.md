@@ -13,11 +13,11 @@ Puis rendez-vous sur le dashboard de traefik http://localhost:8080/
 
 Ensuite, il faut ajouter les labels suivants sur le container du projet que vous voulez voir apparaitre dans traefik
 
-`touch compose-ovveride.yml`
+`touch compose.override.yml`
 
 ```
 services:
-  nginx:
+  nginx-app1:
     networks:
       - traefik-proxy-network
     
@@ -32,3 +32,18 @@ networks:
   traefik-proxy-network:
     external: true
 ```
+
+Pour que les containers puissent accéder aux containers en https, il faut créer des alias sur le container traefik
+
+Exemple : 
+```
+services:
+  traefik:
+    networks:
+      proxy: 
+        aliases:
+          - www.app1.local
+          - www.app2.local
+          - www.app3.local
+```
+De cette façon, l'app1 peut appeler l'app2 via https en passant par le proxy
