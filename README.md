@@ -33,7 +33,7 @@ networks:
     external: true
 ```
 
-Pour que les containers puissent accéder aux containers en https, il faut créer des alias sur le container traefik
+Pour que les containers puissent accéder aux autres containers en https, il faut créer des alias sur le container traefik
 
 Exemple : 
 ```
@@ -47,3 +47,11 @@ services:
           - www.app3.local
 ```
 De cette façon, l'app1 peut appeler l'app2 via https en passant par le proxy
+
+J'ai également ajouter un serveur de mails, car je l'utilise sur presque tous mes projets.
+
+Il faut ajouter le DNS dans le fichier hosts `/etc/hosts`
+```
+127.0.0.1 mailcatcher.local
+```
+Puis rendez-vous sur l'interface web https://mailcatcher.local/
