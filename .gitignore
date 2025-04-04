@@ -1,4 +1,4 @@
-compsose.override.yml
+compose.override.yml
 docker-compose.override.yml
 
 certs/*
