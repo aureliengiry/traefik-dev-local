@@ -1,4 +1,5 @@
-compose.override.yml
-docker-compose.override.yml
+.vscode
+.DS_Store
 
 certs/*
+compose.override.yml
