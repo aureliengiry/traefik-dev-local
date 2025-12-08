@@ -42,8 +42,8 @@ Puis rendez-vous sur le dashboard de traefik https://traefik.dev.local
 
 ## Bonus :
 
-Cette configuration docker compose contient possède un container mailpit pour intercepter les mails envoyés par vos applications en dev local.
-Rendez-vous sur http://mailpit.dev.local pour voir les mails interceptés.
+Cette configuration docker compose contient un container mailpit pour intercepter les mails envoyés par vos applications en dev local.
+Rendez-vous sur https://mail.dev.local pour voir les mails interceptés.
 
 ## Connecter un projet à Traefik
 
