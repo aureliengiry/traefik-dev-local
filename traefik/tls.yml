@@ -1,4 +1,9 @@
 tls:
   certificates:
-    - certFile: /etc/certs/default_cert.pem
-      keyFile: /etc/certs/default_key.pem
+    - certFile: /etc/certs/wildcard.dev.local.crt
+      keyFile: /etc/certs/wildcard.dev.local.key
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/certs/wildcard.dev.local.crt
+        keyFile: /etc/certs/wildcard.dev.local.key

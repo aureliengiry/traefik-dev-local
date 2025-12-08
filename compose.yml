@@ -1,11 +1,16 @@
 services:
   traefik:
     container_name: traefik-proxy
-    image: traefik:saintnectaire
+    image: traefik:latest
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.dev.local`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/tls.yml:/etc/traefik/tls.yml:ro
@@ -13,22 +18,27 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     networks:
-      proxy: ~
+      proxy:
 
-  mailcatcher:
-    image: schickling/mailcatcher
-    container_name: traefik-mailcatcher
-    restart: always
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mailcatcher.rule=Host(`mailcatcher.local`)"
-      - "traefik.http.routers.mailcatcher.tls=true"
-      - "traefik.http.routers.mailcatcher.entrypoints=websecure"
-      - "traefik.http.services.mailcatcher.loadbalancer.server.port=1080"
+      - "traefik.http.routers.mailpit.rule=Host(`mail.dev.local`)"
+      - "traefik.http.routers.mailpit.tls=true"
+      - "traefik.http.routers.mailpit.entrypoints=websecure"
+      - "traefik.http.services.mailpit.loadbalancer.server.port=8025"
+    environment:
+        MP_SMTP_AUTH_ACCEPT_ANY: 1
+        MP_SMTP_AUTH_ALLOW_INSECURE: 1
     networks:
-      proxy: ~
+      proxy:
 
 networks:
   proxy:
     name: "traefik-proxy-network"
-    driver: bridge
+
+volumes:
+  traefik-certs:
+    name: traefik-certs
