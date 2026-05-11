@@ -2,12 +2,6 @@ services:
   traefik:
     container_name: traefik-proxy
     image: traefik:latest
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.dev.local`)"
-      - "traefik.http.routers.traefik.tls=true"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
     ports:
       - "80:80"
       - "443:443"
@@ -17,28 +11,150 @@ services:
       - ./certs:/etc/certs:ro
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.dev.local`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
     networks:
       proxy:
+        aliases:
+           - po.gpdis.master.local
 
   mailpit:
     image: axllent/mailpit:latest
-    container_name: mailpit
+    container_name: traefik-mailpit
+    restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mailpit.rule=Host(`mail.dev.local`)"
+      - "traefik.http.routers.mailpit.rule=Host(`mailpit.dev.local`)"
       - "traefik.http.routers.mailpit.tls=true"
       - "traefik.http.routers.mailpit.entrypoints=websecure"
       - "traefik.http.services.mailpit.loadbalancer.server.port=8025"
-    environment:
-        MP_SMTP_AUTH_ACCEPT_ANY: 1
-        MP_SMTP_AUTH_ALLOW_INSECURE: 1
     networks:
-      proxy:
+      proxy: ~
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: traefik-dozzle
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dozzle.rule=Host(`dozzle.dev.local`)"
+      - "traefik.http.routers.dozzle.tls=true"
+      - "traefik.http.routers.dozzle.entrypoints=websecure"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      proxy: ~
+  # loki:
+  #   image: grafana/loki:latest
+  #   container_name: traefik-loki
+  #   command: -config.file=/etc/loki/local-config.yaml
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.loki.rule=Host(`loki.local`)"
+  #     - "traefik.http.routers.loki.tls=true"
+  #     - "traefik.http.routers.loki.tls.certresolver=letsencrypt"
+  #     - "traefik.http.routers.loki.entrypoints=websecure"
+  #     - "traefik.http.services.loki.loadbalancer.server.port=3100"
+  #   volumes:
+  #     - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
+  #    # - ./loki/loki-data:/loki:rw
+  #     - loki-storage:/loki:rw
+
+  #   networks:
+  #     proxy: ~
+  # promtail:
+  #   container_name: traefik-promtail
+  #   image: grafana/promtail:latest
+  #   volumes:
+  #     - ./promtail/promtail-config.yaml:/etc/promtail/config.yml
+  #     - /var/log:/var/log  # Montez vos logs applicatifs ici
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro  # Accès aux logs des conteneurs
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - /home/agiry/working-directory/relight/relight_v3/var/log:/var/log/relight-admin:ro
+  #   command: -config.file=/etc/promtail/config.yml
+  #   networks:
+  #     proxy: ~
+
+  # grafana:
+  #   container_name: traefik-grafana
+  #   image: grafana/grafana:latest
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana-storage:/var/lib/grafana
+  #   depends_on:
+  #     - loki
+  #   networks:
+  #     proxy: ~
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.grafana.rule=Host(`grafana.local`)"
+  #     - "traefik.http.routers.grafana.tls=true"
+  #     - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+  #     - "traefik.http.routers.grafana.entrypoints=websecure"
+  #     - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  # node_exporter:
+  #   container_name: traefik-node-exporter
+  #   image: prom/node-exporter:latest
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /:/rootfs:ro
+  #   command:
+  #     - '--path.procfs=/host/proc'
+  #     - '--path.sysfs=/host/sys'
+  #     - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+  #   networks:
+  #     proxy: ~
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.node_exporter.rule=Host(`node-exporter.local`)"
+  #     - "traefik.http.routers.node_exporter.tls=true"
+  #     - "traefik.http.routers.node_exporter.tls.certresolver=letsencrypt"
+  #     - "traefik.http.routers.node_exporter.entrypoints=websecure"
+  #     - "traefik.http.services.node_exporter.loadbalancer.server.port=9100"
+
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   volumes:
+  #     - ./prometheus/prometheus-config.yml:/etc/prometheus/prometheus.yml
+  #   depends_on:
+  #     - node_exporter
+  #   networks:
+  #     proxy: ~
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.prometheus.rule=Host(`prometheus.local`)"
+  #     - "traefik.http.routers.prometheus.tls=true"
+  #     - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+  #     - "traefik.http.routers.prometheus.entrypoints=websecure"
+  #     - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+
+  # alertmanager:
+  #   container_name: traefik-alertmanager
+  #   image: prom/alertmanager:latest
+  #   volumes:
+  #     - ./alertmanager/alertmanager-config.yml:/etc/alertmanager/config.yml
+  #   networks:
+  #     proxy: ~
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.local`)"
+  #     - "traefik.http.routers.alertmanager.tls=true"
+  #     - "traefik.http.routers.alertmanager.tls.certresolver=letsencrypt"
+  #     - "traefik.http.routers.alertmanager.entrypoints=websecure"
+  #     - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
+
+# volumes:
+#   grafana-storage:
+#   loki-storage:
 
 networks:
   proxy:
     name: "traefik-proxy-network"
-
-volumes:
-  traefik-certs:
-    name: traefik-certs
+    driver: bridge
