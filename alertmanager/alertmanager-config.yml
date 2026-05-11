@@ -1,0 +1,22 @@
+global:
+  smtp_smarthost: 'traefik-mailcatcher:1025'  # Nom du service Docker + port SMTP
+  smtp_from: 'alertmanager@local.test'
+  smtp_require_tls: false  # Désactivé pour Mailcatcher
+
+route:
+  group_by: ['alertname']
+  receiver: 'email-notifications'
+
+receivers:
+  - name: 'email-notifications'
+    email_configs:
+      - to: 'aurelien@local.test'  # Adresse de destination (peut être n'importe quoi)
+        send_resolved: true
+        headers:
+          subject: '[{{ .Status | toUpper }}] Alerte : {{ .CommonAnnotations.summary }}'
+        text: |
+          {{ if eq .Status "firing" }}🚨 **ALERTE ACTIVE** 🚨{{ else }}✅ **ALERTE RÉSOLUE** ✅{{ end }}
+          **Nom** : {{ .CommonAnnotations.summary }}
+          **Description** : {{ .CommonAnnotations.description }}
+          **Début** : {{ .StartsAt }}
+          {{ if eq .Status "firing" }}**Labels** : {{ .CommonLabels }}{{ end }}

@@ -1,95 +1,159 @@
-Traefik-dev-local
+Traefik Dev Local
 =================
 
-Create docker compose settings to use traefik on all local projects
+Stack Docker locale avec **Traefik** comme reverse proxy pour exposer facilement vos projets en développement avec HTTPS.
 
-Documentation : https://doc.traefik.io/traefik/
+## 📋 Services inclus
 
-## Prérequis
+| Service | URL | Port | Documentation |
+|---------|-----|------|---------------|
+| **Traefik** | https://traefik.dev.local | 80, 443 (dashboard: 8080) | [doc.traefik.io](https://doc.traefik.io/traefik/) |
+| **Mailpit** | https://mailpit.dev.local | 8025 | [github.com/axllent/mailpit](https://github.com/axllent/mailpit) |
+| **Dozzle** | https://dozzle.dev.local | 8080 | [github.com/amir20/dozzle](https://github.com/amir20/dozzle) |
 
-- Docker et Docker Compose installés
-- Make installé
-- mkcert installé (sera utilisé par `make mkcert`)
+### Services optionnels (décommenter dans `compose.yml`)
 
-## Structure
+| Service | URL | Port | Documentation |
+|---------|-----|------|---------------|
+| Loki | https://loki.dev.local | 3100 | [grafana.com/oss/loki](https://grafana.com/oss/loki/) |
+| Promtail | - | - | [grafana.com/docs/loki](https://grafana.com/docs/loki/latest/) |
+| Grafana | https://grafana.dev.local | 3000 | [grafana.com/docs](https://grafana.com/docs/) |
+| Prometheus | https://prometheus.dev.local | 9090 | [prometheus.io/docs](https://prometheus.io/docs/introduction/overview/) |
+| Alertmanager | https://alertmanager.dev.local | 9093 | [prometheus.io/docs/alerting](https://prometheus.io/docs/alerting/latest/alertmanager/) |
+| Node Exporter | https://node-exporter.dev.local | 9100 | [github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter) |
 
+---
+
+## ⚙️ Prérequis
+
+- Docker & Docker Compose
+- make
+- mkcert (pour les certificats SSL locaux)
+- Ajouter les DNS dans `/etc/hosts` (voir [Configuration DNS](#-configuration-dns))
+
+---
+
+## 🚀 Installation
+
+### 1. Cloner le dépôt
+```bash
+git clone <url-du-depot>
+cd traefik-dev-local
 ```
-traefik-dev-local/
-├── compose.yml
-├── Makefile
-├── traefik/
-│   ├── traefik.yml (configuration principale de traefik)
-│   └── tls.yml (configuration TLS de traefik)
-└── certs/
-    └── (certificats générés)
+
+### 2. Configurer les domaines SSL
+Éditer `.env` et définir `MKCERT_DOMAINS` avec vos domaines locaux :
+```env
+MKCERT_DOMAINS="*.dev.local localhost 127.0.0.1 ::1"
 ```
 
-## Utilisation
-
-Pour démarrer, il faut : 
-- Créer les certificats ssl `make mkcert` : cette commande va créer des certificats wildcard "*.dev.local" avec l'outils [mkcert](https://github.com/FiloSottile/mkcert)
-- Créer et demarrer l'instance docker `make docker-init`
-
-Ajouter les liens dans le fichier `/etc/hosts` :
-
-```
-127.0.0.1 traefik.dev.local mail.dev.local
-127.0.0.1 app1.dev.local
-# Ajouter ici tous vos autres domaines *.dev.local
+### 3. Générer les certificats
+```bash
+make mkcert
 ```
 
-Puis rendez-vous sur le dashboard de traefik https://traefik.dev.local
-
-## Bonus :
-
-Cette configuration docker compose contient un container mailpit pour intercepter les mails envoyés par vos applications en dev local.
-Rendez-vous sur https://mail.dev.local pour voir les mails interceptés.
-
-## Connecter un projet à Traefik
-
-Ensuite, il faut ajouter les labels suivants sur le container du projet que vous voulez voir apparaitre dans traefik et il faut que les containers soient également dans le même network que traefik
-
-Pour celà, il faut aller dans le dossier de votre projet et faire `touch compose.override.yml`
-
+### 4. Démarrer la stack
+```bash
+make docker-init
 ```
+
+La stack est accessible à : https://traefik.dev.local
+
+---
+
+## 📧 Configuration DNS
+
+Ajouter dans `/etc/hosts` :
+```
+127.0.0.1 traefik.dev.local
+127.0.0.1 mailpit.dev.local
+127.0.0.1 dozzle.dev.local
+```
+
+Pour les services optionnels, ajouter également :
+```
+127.0.0.1 loki.dev.local
+127.0.0.1 grafana.dev.local
+127.0.0.1 prometheus.dev.local
+127.0.0.1 alertmanager.dev.local
+127.0.0.1 node-exporter.dev.local
+```
+
+---
+
+## 📦 Ajouter un nouveau projet
+
+Pour exposer un container via Traefik, ajouter les labels suivants dans votre `compose.yml` (ou via un fichier `compose.override.yml`):
+
+```yaml
 services:
-  service-web-app1:
+  mon-app:
     networks:
       - traefik-proxy-network
-    
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app1.rule=Host(`app1.dev.local`)"
-      - "traefik.http.routers.app1.tls=true"
-      - "traefik.http.routers.app1.entrypoints=websecure"
-      - "traefik.http.services.app1.loadbalancer.server.port=80"
+      - "traefik.http.routers.mon-app.rule=Host(`mon-app.dev.local`)"
+      - "traefik.http.routers.mon-app.tls=true"
+      - "traefik.http.routers.mon-app.entrypoints=websecure"
+      - "traefik.http.services.mon-app.loadbalancer.server.port=80"
 
 networks:
   traefik-proxy-network:
     external: true
 ```
 
-Autre astuce, si vous avez plusieurs containers connectés à traefik qui ont besoin de communiquer entre eux (par exemple, un frontend qui appelle une API), il faut définir les alias sur le network du container traefik. Comme ça, depuis chaque container tous les hosts internes pointeront vers traefik qui fera ensuite le routing.
+> ⚠️ **Important** : Le réseau `traefik-proxy-network` doit être déclaré comme `external: true`.
 
-```
+### Ajouter des alias Traefik (optionnel)
+
+Pour que vos containers puissent accéder à d'autres services en HTTPS via Traefik, ajouter des alias dans `compose.override.yml` :
+
+```yaml
+services:
+  traefik:
+    networks:
       proxy:
         aliases:
-          - api-app1.dev.local
-          - site1.dev.local
-          - site2.dev.local
-          - app-test.dev.local
+          - mon-app.dev.local
+          - api.mon-app.dev.local
 ```
 
-**Exemple d'usage** : Votre app `site1.dev.local` peut maintenant faire des requêtes vers `https://api-app1.dev.local` et Traefik routera automatiquement vers le bon container.
+---
 
-## Dépannage
+## 🛠️ Commandes utiles
 
-**Le container n'apparaît pas dans Traefik :**
-- Vérifier que le container est bien dans le network `traefik-proxy-network`
-- Vérifier les labels du container
-- Consulter les logs : `make docker-logs-full`
+| Commande | Description |
+|----------|-------------|
+| `make docker-init` | Démarrer toute la stack |
+| `make docker-start` | Démarrer les containers |
+| `make docker-stop` | Arrêter les containers |
+| `make docker-restart` | Redémarrer la stack |
+| `make docker-logs` | Voir les logs (suivi) |
+| `make docker-logs-full` | Voir tous les logs depuis le début |
+| `make mkcert` | Régénérer les certificats SSL |
 
-**Erreur de certificat SSL :**
-- Régénérer les certificats : `make mkcert` (cette commande installe automatiquement l'autorité de certification locale)
-- Redémarrer votre navigateur après la génération des certificats
-- Sur certains navigateurs (Firefox notamment), il peut être nécessaire d'importer manuellement le certificat CA de mkcert
+---
+
+## 📊 Monitoring & Logs
+
+- **Dozzle** : Interface web pour visualiser les logs de tous vos containers → https://dozzle.dev.local
+- **Traefik Dashboard** : Tableau de bord Traefik → https://traefik.dev.local
+- **Mailpit** : Serveur SMTP local pour tester l'envoi d'emails → https://mailpit.dev.local
+
+---
+
+## 🔧 Troubleshooting
+
+### Erreur de certificat SSL
+```bash
+# Régénérer les certificats
+make mkcert
+# Redémarrer la stack
+make docker-restart
+```
+
+### Container non accessible
+- Vérifiez que le container est bien sur le réseau `traefik-proxy-network`
+- Vérifiez les labels Traefik
+- Vérifiez que le DNS est bien configuré dans `/etc/hosts`
+- Consultez les logs avec `make docker-logs`

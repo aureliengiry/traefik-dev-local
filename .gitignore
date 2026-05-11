@@ -1,5 +1,10 @@
 .vscode
 .DS_Store
+.idea
 
 certs/*
 compose.override.yml
+docker-compose.override.yml
+
+# Environment files
+.env
